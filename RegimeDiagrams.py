@@ -3,8 +3,8 @@
 
 import numpy as np	# numpy for arrays
 from tqdm import tqdm
-import Solver
-import spherical
+import SpecCAF.Solver as Solver
+import SpecCAF.spherical as spherical
 from matplotlib import pyplot as plt
 from scipy.interpolate import interp1d,interp2d
 from scipy.signal import find_peaks
@@ -119,7 +119,7 @@ cpotypes = cpoIdentify(ratios,tol)
 for i in tqdm(range(Tvec.size)):
     for j in range(Wvec.size):
         
-        p=Solver.params(Tvec[i],strainvec,Wvec[j],confined=True)
+        p=Solver.params(Tvec[i],strainvec,Wvec[j])
         sol=Solver.rk3solve(p,sh,f0)
         
         

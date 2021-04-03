@@ -3,8 +3,8 @@
 
 from numpy import *	# numpy for arrays
 from tqdm import tqdm
-import Solver
-import spherical
+import SpecCAF.Solver as Solver
+import SpecCAF.spherical as spherical
 from matplotlib import pyplot as plt
 import SteadyStateTime as ss
 from scipy.interpolate import interp1d
