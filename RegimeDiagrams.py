@@ -110,21 +110,21 @@ F = np.zeros((Tvec.size,Wvec.size,sh.nlm,strainvec.size))
 Whd = np.logspace(-1,1,1000)
 Thd = np.linspace(-30,-5,1000)
 
-# F = np.load('F100log.npy')
-# ratios = np.load('ratios100log.npy')
-# peakth = np.load('peakth100log.npy')
+# F = np.load('F100log12.npy')
+# ratios = np.load('ratios100log12.npy')
+# peakth = np.load('peakth100log12.npy')
 
 
 cpotypes = cpoIdentify(ratios,tol)
-for i in tqdm(range(Tvec.size)):
+# for i in tqdm(range(Tvec.size)):
     for j in range(Wvec.size):
         
-        p=Solver.params(Tvec[i],strainvec,Wvec[j])
-        sol=Solver.rk3solve(p,sh,f0)
+        # p=Solver.params(Tvec[i],strainvec,Wvec[j])
+        # sol=Solver.rk3solve(p,sh,f0)
         
         
-        interp = interp1d(sol.t,sol.y)
-        F[i,j,:,:] = interp(strainvec)
+        # interp = interp1d(sol.t,sol.y)
+        # F[i,j,:,:] = interp(strainvec)
         
         cpotype,peaksrh,peaksth = peakfind(F[i,j,:,:])
         
@@ -194,7 +194,7 @@ leg = fig2.legend(handles=legend_elements,bbox_to_anchor=(0.1,0,0.8,0.02),ncol=3
 
 
 
-fig2.savefig('regimediagram.png',dpi=600,format='png',bbox_inches='tight')
+fig2.savefig('fig09.pdf',format='pdf',bbox_inches='tight')
 
 fig3,ax3= plt.subplots(nrow,ncol,figsize=(8,9))
 
@@ -206,6 +206,8 @@ for ax in ax3.flat:
 
 
     cs=ax.contourf(Tvec,Wvec,(180/np.pi)*peakth[:,:,strainind].T,[0, 10, 20, 30, 40, 50, 60, 70],cmap='magma')
+    for c in cs.collections:
+        c.set_edgecolor("face")
     ax.set_aspect('auto')
     ax.set_yscale('log')
     ax.set_xlabel('$T(^{\circ}C)$')
@@ -217,6 +219,9 @@ for ax in ax3.flat:
 cbar_ax = fig3.add_axes([0.1,-0.01, 0.8, 0.02])
 cbar=fig3.colorbar(cs,cax=cbar_ax,orientation='horizontal')
 cbar.set_label('Angle between primary cluster and compression axis $(^{\\circ})$')
+
+    
+cbar.solids.set_edgecolor("face")
 #fig3.colorbar(cs,bbox_to_anchor=(0.1,0,0.8,0.02))
 
-fig3.savefig('singlemaxtheta.png',dpi=600,format='png',bbox_inches='tight')
+fig3.savefig('fig08.pdf',format='pdf',bbox_inches='tight')

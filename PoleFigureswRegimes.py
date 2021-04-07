@@ -120,12 +120,12 @@ cpotypes = cpoIdentify(ratios,tol)
 for i in tqdm(range(Tvec.size)):
     for j in range(Wvec.size):
         
-        p=Solver.params(Tvec[i],strainvec,Wvec[j])
-        sol=Solver.rk3solve(p,sh,f0)
+        # p=Solver.params(Tvec[i],strainvec,Wvec[j])
+        # sol=Solver.rk3solve(p,sh,f0)
         
         
-        interp = interp1d(sol.t,sol.y)
-        F[i,j,:,:] = interp(strainvec)
+        # interp = interp1d(sol.t,sol.y)
+        # F[i,j,:,:] = interp(strainvec)
         
         cpotype,peaksrh,peaksth = peakfind(F[i,j,:,:])
         
@@ -187,9 +187,14 @@ for i in range(Tinsv.size):
         inv=ax.transAxes.inverted()
         axcentre = inv.transform(axcentre)
         ins = ax.inset_axes([axcentre[0]-xscale*r,axcentre[1]-r,2*xscale*r,2*r])
-        cs=ins.contourf(xx,yy,fgrid,10,vmin=0,vmax=vm,alpha=0.95,antialiased=True)
-        ins.contour(xx,yy,fgrid,10,vmin=0,vmax=vm,linewidths=0.1,colors='white')
+        cs=ins.contourf(xx,yy,fgrid,10,vmin=0,vmax=vm,alpha=1,antialiased=True)
+        cs=ins.contourf(xx,yy,fgrid,10,vmin=0,vmax=vm,alpha=1,antialiased=True)
+        csl=ins.contour(xx,yy,fgrid,10,vmin=0,vmax=vm,linewidths=0.1,colors='white')
         ins.axis('off')
+        # for c in cs.collections:
+        #     c.set_edgecolor("face")
+        # for c in csl.collections:
+        #     c.set_edgecolor('face')
 
 
 legend_elements = [mpl.patches.Patch(facecolor=col1,label='Single Maxima'),
@@ -200,8 +205,8 @@ leg = fig2.legend(handles=legend_elements,bbox_to_anchor=(0.1,0,0.9,0.02),ncol=2
 cbar=plt.colorbar(cm.ScalarMappable(norm(0, vm),cmap='viridis'),pad=0.18,ticks=np.mgrid[0:vm:0.1],aspect=35)
 
 cbar.ax.set_title('$\\rho^*$')
-
-fig2.savefig('polefiguresandregimes.png',dpi=600,format='png',bbox_inches='tight')
+cbar.solids.set_edgecolor("face")
+fig2.savefig('fig10.pdf',format='pdf',bbox_inches='tight')
 
 
 

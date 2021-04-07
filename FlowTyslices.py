@@ -10,6 +10,7 @@ from matplotlib import cm
 from matplotlib.colors import Normalize as norm
 from scipy.interpolate import interp1d
 from mpl_toolkits import mplot3d
+import NumpyViscosities as visc
 import colorcet
 plt.rcParams.update({
     "text.usetex": True,
@@ -109,6 +110,8 @@ for i in range(Tvec.size):
         xx,yy,fgrid=sh.polefigure(F[i,j,:,-1])
         if y0:
             con=ax.contourf(strainvec,th*180/pi,rh,50,vmin=0,vmax=vm,cmap=colmap)
+            for c in con.collections:
+                c.set_edgecolor("face")
         else:
             con = ax.contourf(xx,yy,fgrid,50,vmin=0,vmax=vm,cmap=colmap)
         if y0:
@@ -123,7 +126,7 @@ if y0:
     ax.set_yticks([-90,90])
     
     
-    ax.set_xlabel('$\gamma$',labelpad=-9.5,backgroundcolor="white",fontsize=fs-2)
+    ax.set_xlabel('$\gamma$',labelpad=-6,backgroundcolor="white",fontsize=fs-2)
     ax.set_ylabel('$\\theta^{\circ}$',labelpad=-12,backgroundcolor="white",fontsize=fs-2)
     ax.set_xticklabels([0,strainvec[-1]],fontsize=fs-2)
     ax.set_yticklabels([-90,90],fontsize=fs-2)
@@ -138,7 +141,9 @@ else:
 cbar_ax = fig.add_axes([0.1, -0.02, 0.8, 0.02])
 cbar=plt.colorbar(cm.ScalarMappable(norm(0, vm),cmap=colmap),cax=cbar_ax,ticks=mgrid[0:vm:0.1],orientation='horizontal')
 cbar.set_label('$\\rho^*$')
+cbar.solids.set_edgecolor("face")
 plt.show()
-fig.savefig(fname,dpi=400,format='png',bbox_inches='tight')
+
+fig.savefig('fig06.pdf',format='pdf',bbox_inches='tight')
     
     
