@@ -8,34 +8,94 @@ Created on Wed Jun 17 09:28:19 2020
 import numpy as np
 import os.path
 from tqdm import tqdm
-
+import SpecCAF.confidence as confidence
 I = np.eye(3)
 
         
         
-class params:
-    def __init__(self,T,strain,vortnum):
-        self.iota = 0.02589*T + 1.78
-        self.lamb = 0.0003037*T + 0.161
-        self.beta = 0.1706*T + 5.898
-        if strain.size==1:
-            self.totalstrain=strain
-        else:
-            self.totalstrain=strain[-1]
-            self.strain=strain
+# class params:
+#     def __init__(self,T,strain,vortnum):
+#         self.iota = 0.02589*T + 1.78
+#         self.lamb = 0.0003037*T + 0.161
+#         self.beta = 0.1706*T + 5.898
+#         if strain.size==1:
+#             self.totalstrain=strain
+#         else:
+#             self.totalstrain=strain[-1]
+#             self.strain=strain
             
-        self.vortnum=vortnum
-        self.gradu = (np.sqrt(2.)/2.)*np.array([[1, 0., vortnum],\
-                                       [0., 0., 0.],\
-                                       [-vortnum, 0., -1]])
+#         self.vortnum=vortnum
+#         self.gradu = (np.sqrt(2.)/2.)*np.array([[1, 0., vortnum],\
+#                                        [0., 0., 0.],\
+#                                        [-vortnum, 0., -1]])
+#         self.D = 0.5*(self.gradu+self.gradu.T)
+#         self.W = 0.5*(self.gradu-self.gradu.T)
+#         self.w = np.array([self.W[2,1], self.W[0,2], self.W[1,0]])
+#         self.D2 = np.einsum('ij,ji',self.D,self.D)
+#         self.W2 = np.einsum('ij,ji',self.W,self.W)
+#         self.R = np.sqrt(-self.W2 + self.D2)
+#         self.effectiveSR = np.sqrt(self.D2)
+#         self.octSR = np.sqrt(2*self.D2/3)
+
+
+
+def gradufromW(W):
+    gradu = np.array([[1, 0., W],\
+                      [0., 0., 0.],\
+                      [-W, 0., -1]])
+    return gradu
+
+
+class params:
+    def __init__(self,T,time,gradu,mode='mean'):
+        # if T>-30:
+        #     self.iota = 0.02589*T + 1.78
+        #     self.lamb = 2*(0.0003037*T + 0.161)
+        #     self.beta = 2*(0.1706*T + 5.898)
+        # else:
+        #     self.iota = 0.02589*-30 + 1.78
+        #     self.lamb = 2*(0.0003037*-30 + 0.161)
+        #     self.beta = 2*(0.1706*-30 + 5.898)
+        self.parameters = confidence.parameters()
+        
+        if mode=='max':
+            self.iota = self.parameters.iotaUB(T)
+            self.beta = self.parameters.betaUB(T)
+            self.lamb = self.parameters.lambLB(T)
+        elif mode=='min':
+            self.iota = self.parameters.iotaLB(T)
+            self.beta = self.parameters.betaLB(T)
+            self.lamb = self.parameters.lambUB(T)
+        else:
+            self.iota = self.parameters.iota(T)
+            self.beta = self.parameters.beta(T)
+            self.lamb = self.parameters.lamb(T)
+
+
+
+        
+
+        
+        self.gradu = gradu
         self.D = 0.5*(self.gradu+self.gradu.T)
         self.W = 0.5*(self.gradu-self.gradu.T)
-        self.w = np.array([self.W[2,1], self.W[0,2], self.W[1,0]])
+        self.w = 2*np.array([self.W[2,1], self.W[0,2], self.W[1,0]])
         self.D2 = np.einsum('ij,ji',self.D,self.D)
         self.W2 = np.einsum('ij,ji',self.W,self.W)
-        self.R = np.sqrt(-self.W2 + self.D2)
-        self.effectiveSR = np.sqrt(self.D2)
+        self.effectiveSR = np.sqrt(0.5*self.D2)
         self.octSR = np.sqrt(2*self.D2/3)
+        self.strain = time*self.effectiveSR
+
+
+        self.gradu = self.gradu/self.effectiveSR
+        self.D = self.D/self.effectiveSR
+        self.W = self.W/self.effectiveSR
+        self.w = 2*np.array([self.W[2,1], self.W[0,2], self.W[1,0]])
+        self.D2 = np.einsum('ij,ji',self.D,self.D)
+        self.W2 = np.einsum('ij,ji',self.W,self.W)
+            
+        self.totalstrain = self.strain[-1]
+
 
 
         
@@ -44,7 +104,30 @@ def MatrixLoad(sh):
     if os.path.exists(filename):
         npzfile = np.load(filename)
         R=npzfile['R']
-        Ri=npzfile['Ri']
+        Ri=npzfile['Ri']        
+# class params:
+#     def __init__(self,T,strain,vortnum):
+#         self.iota = 0.02589*T + 1.78
+#         self.lamb = 0.0003037*T + 0.161
+#         self.beta = 0.1706*T + 5.898
+#         if strain.size==1:
+#             self.totalstrain=strain
+#         else:
+#             self.totalstrain=strain[-1]
+#             self.strain=strain
+            
+#         self.vortnum=vortnum
+#         self.gradu = (np.sqrt(2.)/2.)*np.array([[1, 0., vortnum],\
+#                                        [0., 0., 0.],\
+#                                        [-vortnum, 0., -1]])
+#         self.D = 0.5*(self.gradu+self.gradu.T)
+#         self.W = 0.5*(self.gradu-self.gradu.T)
+#         self.w = np.array([self.W[2,1], self.W[0,2], self.W[1,0]])
+#         self.D2 = np.einsum('ij,ji',self.D,self.D)
+#         self.W2 = np.einsum('ij,ji',self.W,self.W)
+#         self.R = np.sqrt(-self.W2 + self.D2)
+#         self.effectiveSR = np.sqrt(self.D2)
+#         self.octSR = np.sqrt(2*self.D2/3)
         B=npzfile['B']
         Bi=npzfile['Bi']
         G=npzfile['G']
