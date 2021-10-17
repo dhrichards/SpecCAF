@@ -8,6 +8,7 @@ Created on Mon Nov 30 15:50:28 2020
 import numpy as np
 import pandas as pd
 from scipy import signal
+from scipy.interpolate import CubicSpline
 # Find time to steady state when eigenvalues are within +/- delta% of final value
 
 def getMaxLength(arr, n): 
@@ -166,5 +167,34 @@ def SteadyStateSD(t,y,tolperc=0.1,strainwindow=0.5):
     
     return sstime
     
+
+def Halfway(t,y,strainwindow=0.5,value=0.5):
+
+    yend = y[-1]
+    ypanda  = pd.Series(y.real,index=t)
+    window = int(np.round(strainwindow*t.size/t[-1]))
+    window=1
+    #Smooth
+    yroll = ypanda.rolling(window).mean()
+
+    yval = value*(yend-1) + 1
+
+    time = yroll[yroll.gt(yval)].index[0]
+    return time
+
+def HalfwayCubic(t,y,value=0.5):
+
+    yend = y[-1]
+    yroot = value*(yend-1) + 1
+
+    spl = CubicSpline(t,y-yroot)
+    roots = spl.roots()
+
+    roots = roots[roots>0]
+    roots = roots[roots<t[-1]]
+
+    return roots[0]
+    
+
     
     

@@ -1,3 +1,4 @@
+#%%
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
@@ -22,6 +23,7 @@ plt.rcParams.update({
     
 })
 
+paramtype = 'mean'
 def peakfind(f,tol=0.1):
     rh,th = sh.y0synth(f)
 #tol=0.1
@@ -93,10 +95,10 @@ f0=sh.spec_array()
 f0[0]=1
 
 
-strainvec = np.linspace(0,10,200)
-Tvec = np.linspace(-30,-5,100)
+strainvec = np.linspace(0,10,100)
+Tvec = np.linspace(-30,-5,50)
 #Wvec = np.linspace(0,1,30)
-Wvec = np.logspace(-1,1,100)
+Wvec = np.logspace(-1,1,50)
 #Wvec = np.concatenate([np.linspace(0,0.1,10),np.logspace(-1,1,20)])
 
 
@@ -110,16 +112,17 @@ F = np.zeros((Tvec.size,Wvec.size,sh.nlm,strainvec.size))
 Whd = np.logspace(-1,1,1000)
 Thd = np.linspace(-30,-5,1000)
 
-# F = np.load('F100log12.npy')
+F = np.load('F' + str(Wvec.size) + paramtype + '.npy')
 # ratios = np.load('ratios100log12.npy')
 # peakth = np.load('peakth100log12.npy')
 
 
 cpotypes = cpoIdentify(ratios,tol)
-# for i in tqdm(range(Tvec.size)):
+for i in tqdm(range(Tvec.size)):
     for j in range(Wvec.size):
         
-        # p=Solver.params(Tvec[i],strainvec,Wvec[j])
+        # gradu = Solver.gradufromW(Wvec[j])
+        # p=Solver.params(Tvec[i],strainvec,gradu,paramtype)
         # sol=Solver.rk3solve(p,sh,f0)
         
         
@@ -194,7 +197,7 @@ leg = fig2.legend(handles=legend_elements,bbox_to_anchor=(0.1,0,0.8,0.02),ncol=3
 
 
 
-fig2.savefig('fig09.pdf',format='pdf',bbox_inches='tight')
+fig2.savefig('fig09' + paramtype + '.pdf',format='pdf',bbox_inches='tight')
 
 fig3,ax3= plt.subplots(nrow,ncol,figsize=(8,9))
 
@@ -224,4 +227,6 @@ cbar.set_label('Angle between primary cluster and compression axis $(^{\\circ})$
 cbar.solids.set_edgecolor("face")
 #fig3.colorbar(cs,bbox_to_anchor=(0.1,0,0.8,0.02))
 
-fig3.savefig('fig08.pdf',format='pdf',bbox_inches='tight')
+fig3.savefig('fig08' + paramtype + '.pdf',format='pdf',bbox_inches='tight')
+
+#np.save('F' + str(Wvec.size) + paramtype + '.npy',F)

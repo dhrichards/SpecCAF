@@ -1,3 +1,4 @@
+#%%
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
@@ -94,10 +95,10 @@ f0=sh.spec_array()
 f0[0]=1
 
 
-strainvec = np.linspace(0,10,200)
-Tvec = np.linspace(-30,-5,100)
+strainvec = np.linspace(0,10,100)
+Tvec = np.linspace(-30,-5,50)
 #Wvec = np.linspace(0,1,30)
-Wvec = np.logspace(-1,1,100)
+Wvec = np.logspace(-1,1,50)
 #Wvec = np.concatenate([np.linspace(0,0.1,10),np.logspace(-1,1,20)])
 
 
@@ -108,19 +109,19 @@ peakth = np.zeros_like(ratios)
 F = np.zeros((Tvec.size,Wvec.size,sh.nlm,strainvec.size))
 
 
-Whd = np.logspace(-1,1,1000)
-Thd = np.linspace(-30,-5,1000)
+Whd = np.logspace(-1,1,100)
+Thd = np.linspace(-30,-5,100)
 
-# F = np.load('F100log12.npy')
-# ratios = np.load('ratios100log12.npy')
-# peakth = np.load('peakth100log12.npy')
+paramtype = 'min'
+F = np.load('F' + str(Wvec.size) + paramtype + '.npy')
 
 
 cpotypes = cpoIdentify(ratios,tol)
 for i in tqdm(range(Tvec.size)):
     for j in range(Wvec.size):
         
-        # p=Solver.params(Tvec[i],strainvec,Wvec[j])
+        # gradu = Solver.gradufromW(Wvec[j])
+        # p=Solver.params(Tvec[i],strainvec,gradu)
         # sol=Solver.rk3solve(p,sh,f0)
         
         
@@ -179,11 +180,12 @@ for i in range(Tinsv.size):
         Wind = np.abs(Wvec-Wins[j,i]).argmin()
         Tind = np.abs(Tvec-Tins[j,i]).argmin()
         
-        p=Solver.params(Tins[j,i],np.linspace(0,strainplot,100),Wins[j,i],confined=True)
+        gradu = Solver.gradufromW(Wins[j,i])
+        p=Solver.params(Tins[j,i],np.linspace(0,strainplot,100),gradu)
         sol=Solver.rk3solve(p,shpf,f0pf)
         xx,yy,fgrid=shpf.polefigure(sol.y[:,-1])
         
-        axcentre = ax.transData.transform((Tvec[Tind],Wvec[Wind]))
+        axcentre = ax.transData.transform((Tins[j,i],Wins[j,i]))
         inv=ax.transAxes.inverted()
         axcentre = inv.transform(axcentre)
         ins = ax.inset_axes([axcentre[0]-xscale*r,axcentre[1]-r,2*xscale*r,2*r])
@@ -206,7 +208,9 @@ cbar=plt.colorbar(cm.ScalarMappable(norm(0, vm),cmap='viridis'),pad=0.18,ticks=n
 
 cbar.ax.set_title('$\\rho^*$')
 cbar.solids.set_edgecolor("face")
-fig2.savefig('fig10.pdf',format='pdf',bbox_inches='tight')
+fig2.savefig('fig12' + paramtype + '.png',format='png',dpi=400,bbox_inches='tight')
 
 
 
+
+# %%

@@ -1,5 +1,4 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+#%%
 
 from numpy import *	# numpy for arrays
 from tqdm import tqdm
@@ -9,6 +8,7 @@ from matplotlib import pyplot as plt
 import SteadyStateTime as ss
 from scipy.interpolate import interp1d
 import matplotlib.gridspec as gridspec
+import matplotlib.ticker as ticker
 plt.rcParams.update({
     "text.usetex": True,
     "font.family": "serif",
@@ -28,29 +28,29 @@ f0[0]=1
 
 
 strainvec = linspace(0,30,300)
-Tvec = linspace(-30,-5,50)
+Tvec = linspace(-30,-5,60)
 #Wvec = linspace(0,3,50)
-Wvec = logspace(-2,1,50)
+Wvec = logspace(-1,1,60)
 
 Sgrid,Tgrid=meshgrid(Wvec,Tvec)
 contSS = zeros((Tvec.size,Wvec.size))
 contJ = zeros((Tvec.size,Wvec.size))
 F = zeros((Tvec.size,Wvec.size,sh.nlm,strainvec.size))
 
-
-#F=load('F50ss.npy')
-
-
+paramtype = 'max'
+F = load('Fss01' + str(Wvec.size) + paramtype + '.npy')
+#F = load('Fss' + str(Wvec.size) + paramtype + '.npy')
 for i in tqdm(range(Tvec.size)):
     for j in range(Wvec.size):
         
-        p=Solver.params(Tvec[i],strainvec,Wvec[j])
-        sol=Solver.rk3solve(p,sh,f0)
+        # gradu = Solver.gradufromW(Wvec[j])
+        # p=Solver.params(Tvec[i],strainvec,gradu,paramtype)
+        # sol=Solver.rk3solve(p,sh,f0)
         
         
-        interp = interp1d(sol.t,sol.y)
-        F[i,j,:,:] = interp(strainvec)
-        contSS[i,j] = ss.SteadyStateRM(strainvec, sh.J(F[i,j,:,:]),strainwindow=0.5,tolperc=10)
+        # interp = interp1d(sol.t,sol.y)
+        # F[i,j,:,:] = interp(strainvec)
+        contSS[i,j] = ss.HalfwayCubic(strainvec, sh.J(F[i,j,:,:]),value=0.6)
         contJ[i,j] = sh.J(F[i,j,:,-1])
     
     
@@ -89,19 +89,23 @@ ax2.set_yscale('log')
 #ax[0,0].set_title('(a) Steady state strain')
 #ax[0,1].set_title('(b) $J$ index at steady state')   
 
-cs=ax1.contourf(Tgrid,Sgrid,contSS,levels=mgrid[floor(contSS.min()):ceil(contSS.max()):1],cmap='inferno')
-cb1=fig.colorbar(cs,cax=cax1,ticks=mgrid[floor(contSS.min()):ceil(contSS.max()):2],orientation='horizontal')
-cb1.ax.set_title('Finite strain at steady state')
+def myfmt(x, pos):
+    return '{0:.2f}'.format(x)
+
+
+cs=ax1.contourf(Tgrid,Sgrid,contSS,levels=linspace(contSS.min(),contSS.max(),9),cmap='inferno')
+cb1=fig.colorbar(cs,cax=cax1,ticks=linspace(contSS.min(),contSS.max(),5),orientation='horizontal',format=ticker.FuncFormatter(myfmt))
+cb1.ax.set_title('Strain at halfway to steady state')
 ax1.text(0.05, 0.9, '(a)',transform=ax1.transAxes,color='white')
 
-cs2 = ax2.contourf(Tgrid,Sgrid,contJ,levels=mgrid[1:ceil(contJ.max()):0.25],vmin=1,cmap='viridis')
-cb2=fig.colorbar(cs2,cax=cax2,ticks=mgrid[1:ceil(contJ.max()):0.5],orientation='horizontal')
+cs2 = ax2.contourf(Tgrid,Sgrid,contJ,levels=linspace(1,contJ.max(),9),vmin=1,cmap='viridis')
+cb2=fig.colorbar(cs2,cax=cax2,ticks=linspace(1,contJ.max(),5),orientation='horizontal',format=ticker.FuncFormatter(myfmt))
 cb2.ax.set_title('$J$ index at steady state')
 ax2.text(0.05, 0.9, '(b)',transform=ax2.transAxes,color='white')
 
 # Plot eigenvalues and steady state time
-i=0
-j=0
+i=25
+j=25
 A = sh.a2(F[i,j,:,:])
 A = moveaxis(A,-1,0)
 eigA,w = linalg.eig(A)
@@ -110,23 +114,20 @@ J=sh.J(F[i,j,:,:])
 ax3.plot(strainvec,J)
 ax3.axvline(contSS[i,j],color='black',lw=2,ls='--')
 yplot = (J.max()+1)/2
-ax3.text(contSS[i,j]+0.25,yplot,'Finite strain \n at steady state')
+ax3.text(contSS[i,j]+0.25,yplot,'Strain at halfway to steady state')
 ax3.set_xlabel('Strain $\gamma$')
 ax3.set_ylabel('$J$')
 ax3.set_xlim(0,10)
 #ax[1,0].set_ylabel('Eigenvalues of $\mathbf{A^{(2)}}$'-2)
-title = '(c) $J$ index at $T=-30^{\circ}C$, $\mathcal{W}=0.01$'
+Tplot = Tvec[i]
+Wplot = Wvec[j]
+Tstr = "{0:0.1f}".format(Tplot)
+Wstr = "{0:.3g}".format(Wplot)
+title = '(c) $J$ index at $T=' + Tstr +'^{\circ}C$, $\mathcal{W}=' + Wstr + '$'
 ax3.set_title(title)
 
 
-# i=0
-# j=-1
-# ax[1,1].plot(strainvec,sh.J(F[i,j,:,:]))
-# ax[1,1].axvline(contSS[i,j],color='black')
 
-plt.show()
-fname = 'steadystate4.png' 
-fig.savefig(fname,dpi=600,format='png',bbox_inches='tight')
 
 for c in cs.collections:
     c.set_edgecolor("face")
@@ -135,8 +136,12 @@ for c in cs2.collections:
     
 cb1.solids.set_edgecolor("face")
 cb2.solids.set_edgecolor("face")
-fig.savefig('fig11.pdf',format='pdf',bbox_inches='tight')
+#fig.savefig('fig11halfway' + paramtype + '.pdf',format='pdf',bbox_inches='tight')
+
+
+#save('Fss01' + str(Wvec.size) + paramtype + '.npy',F)
 
 # plt.plot(Wvec,contJ[1,:])
 # #plt.xscale('log')
 # plt.grid()
+# %%
