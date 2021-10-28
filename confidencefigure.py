@@ -55,8 +55,9 @@ ax[0].set_xlabel('$T(^{\circ}C)$')
 ax[0].set_ylim(top=2.3)
 ax[1].set_ylabel('$\\tilde{\\beta}$')
 ax[1].set_xlabel('$T(^{\circ}C)$')
+ax[1].set_ylim(top=17)
 
-ax[1].legend(loc=4)
+ax[1].legend(loc=2)
 
 
 def myfmt(x):
@@ -74,7 +75,7 @@ legend_elements = [mpl.lines.Line2D([0],[0],color=iotacol,label='$\iota = ' + \
 #leg = ax[0].legend(handles = legend_elements, ncol=3, loc = 2)
 leg = fig.legend(handles=legend_elements,bbox_to_anchor=(0.1,0,0.8,0.02),ncol=3,mode="expand")
 
-fig.savefig('figS1.pdf',format='pdf',bbox_inches='tight')
+fig.savefig('fig6.pdf',format='pdf',bbox_inches='tight')
 
 
 

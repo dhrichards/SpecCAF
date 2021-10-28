@@ -37,7 +37,7 @@ contSS = zeros((Tvec.size,Wvec.size))
 contJ = zeros((Tvec.size,Wvec.size))
 F = zeros((Tvec.size,Wvec.size,sh.nlm,strainvec.size))
 
-paramtype = 'max'
+paramtype = 'min'
 F = load('Fss01' + str(Wvec.size) + paramtype + '.npy')
 #F = load('Fss' + str(Wvec.size) + paramtype + '.npy')
 for i in tqdm(range(Tvec.size)):
@@ -50,7 +50,7 @@ for i in tqdm(range(Tvec.size)):
         
         # interp = interp1d(sol.t,sol.y)
         # F[i,j,:,:] = interp(strainvec)
-        contSS[i,j] = ss.HalfwayCubic(strainvec, sh.J(F[i,j,:,:]),value=0.6)
+        contSS[i,j] = ss.HalfwayCubic(strainvec, sh.J(F[i,j,:,:]),value=0.5)
         contJ[i,j] = sh.J(F[i,j,:,-1])
     
     
@@ -117,7 +117,7 @@ yplot = (J.max()+1)/2
 ax3.text(contSS[i,j]+0.25,yplot,'Strain at halfway to steady state')
 ax3.set_xlabel('Strain $\gamma$')
 ax3.set_ylabel('$J$')
-ax3.set_xlim(0,10)
+ax3.set_xlim(0,4)
 #ax[1,0].set_ylabel('Eigenvalues of $\mathbf{A^{(2)}}$'-2)
 Tplot = Tvec[i]
 Wplot = Wvec[j]
@@ -136,10 +136,10 @@ for c in cs2.collections:
     
 cb1.solids.set_edgecolor("face")
 cb2.solids.set_edgecolor("face")
-#fig.savefig('fig11halfway' + paramtype + '.pdf',format='pdf',bbox_inches='tight')
+fig.savefig('fig13halfway' + paramtype + '.pdf',format='pdf',bbox_inches='tight')
 
 
-#save('Fss01' + str(Wvec.size) + paramtype + '.npy',F)
+#save('Fsstest' + str(Wvec.size) + paramtype + '.npy',F)
 
 # plt.plot(Wvec,contJ[1,:])
 # #plt.xscale('log')
