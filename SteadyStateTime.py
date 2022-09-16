@@ -194,6 +194,21 @@ def HalfwayCubic(t,y,value=0.5):
     roots = roots[roots<t[-1]]
 
     return roots[0]
+
+def ToValue(t,y,yroot=2):
+
+    spl = CubicSpline(t,y-yroot)
+    roots = spl.roots()
+
+    roots = roots[roots>0]
+    roots = roots[roots<t[-1]]
+    if roots.size == 0:
+        root = np.NaN
+    else:
+        root = roots[0]
+
+    return root
+
     
 
     
