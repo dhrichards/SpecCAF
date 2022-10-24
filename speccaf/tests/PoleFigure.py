@@ -5,7 +5,7 @@ import spherical
 import solver
 from matplotlib import pyplot as plt
 
-import SpecCAF
+
 sh = spherical.spherical(12)
 
 
