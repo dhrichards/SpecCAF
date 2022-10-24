@@ -1,0 +1,219 @@
+
+import numpy as np
+import pkgutil
+import io
+
+I = np.eye(3)
+    
+def MatrixLoad(sh):
+    
+    filepath = 'data/MatricesL' + str(sh.lmax) + '.npz'
+    fobj = io.BytesIO(pkgutil.get_data(__name__,filepath))
+    npzfile = np.load(fobj)
+    R=npzfile['R']
+    Ri=npzfile['Ri']
+    B=npzfile['B']
+    Bi=npzfile['Bi']
+    G=npzfile['G']
+    Gi=npzfile['Gi']
+    # else:
+    #     [R,Ri,B,Bi,G,Gi] = MatrixBuild(sh)
+    #     np.savez(filename,R=R,Ri=Ri,B=B,Bi=Bi,G=G,Gi=Gi)
+        
+    return R,Ri,B,Bi,G,Gi
+    
+class rk3iterate:
+    def __init__(self,T,gradu,sh,lamfactor=1.0):
+        self.sh=sh
+
+        self.parameters = parameters()
+        self.iota = self.parameters.iota(T)
+        self.beta = self.parameters.beta(T)
+        self.lamb = self.parameters.lamb(T)
+        
+        self.gradu = gradu
+        self.D = 0.5*(self.gradu+self.gradu.T)
+        self.W = 0.5*(self.gradu-self.gradu.T)
+        self.D2 = np.einsum('ij,ji',self.D,self.D)
+        self.effectiveSR = np.sqrt(0.5*self.D2)
+        
+        
+
+        # self.iota = 0.02589*T + 1.78
+        # self.lamb = 0.0003037*T + 0.161
+        # self.beta = 0.1706*T + 5.898
+        
+        self.lamb=self.lamb*self.effectiveSR/lamfactor
+        self.beta=self.beta*self.effectiveSR
+        [self.R,self.Ri,self.B,self.Bi,self.G,self.Gi] = MatrixLoad(self.sh)
+        
+        self.M = self.linear()
+        
+    def linear(self):
+        Mr =  + np.einsum('ijkl,kl->ij',self.R,self.gradu) - self.iota*np.einsum('ijkl,kl->ij',self.B,self.gradu)\
+              - self.lamb*np.einsum('ij,j->ij',np.eye(self.sh.nlm),self.sh.l*(self.sh.l+1))
+        Mi =  + np.einsum('ijkl,kl->ij',self.Ri,self.gradu) - self.iota*np.einsum('ijkl,kl->ij',self.Bi,self.gradu)
+        
+              
+        return Mr.real - 1j*Mi.real
+    
+    def NL(self,f):
+        a2=self.sh.a2(f)
+        a4=self.sh.a4(f)
+        
+        DijDkl = np.einsum('ij,kl->ijkl',self.D,self.D)
+        IikAjl = np.einsum('ik,jl->ijkl',np.eye(3),a2)
+        Gu = np.einsum('ijklmn,klmn->ij',self.G,DijDkl)
+        Gui = np.einsum('ijklmn,klmn->ij',self.Gi,DijDkl)
+        
+        return 5*self.beta*((np.einsum('ij,j->i',Gu,f.real) +np.einsum('ij,j->i',Gui,f.imag))\
+                         - np.einsum('ijkl,ijkl,m->m',DijDkl,IikAjl-a4,f))/self.D2
+            
+            
+            
+
+
+            
+    def iterate(self,f,dt):
+        
+        ak = (8/15,5/12,3/4)
+        bk = (0, -17/60, -5/12)  
+        fm = np.zeros_like(f)
+
+        
+        for rk in range(3):
+            RH = np.einsum('ij,j->i',np.eye(self.sh.nlm) + 0.5*(ak[rk]+bk[rk])*dt*self.M,f) \
+                    + ak[rk]*dt*self.NL(f) + bk[rk]*dt*self.NL(fm)
+            fm = np.copy(f)
+            f = np.linalg.solve(np.eye(self.sh.nlm) - 0.5*(ak[rk]+bk[rk])*dt*self.M,RH)
+            
+        return f
+    
+
+def MatrixBuild(sh):
+    
+
+    
+    # Initialise arrays
+    
+    R =  np.zeros((sh.nlm,sh.nlm,3,3),dtype=complex)
+    Ri= np.zeros_like(R)
+    B =  np.zeros((sh.nlm,sh.nlm,3,3),dtype=complex)
+    Bi= np.zeros_like(B)
+    G =  np.zeros((sh.nlm,sh.nlm,3,3,3,3),dtype=complex)
+    Gi= np.zeros_like(G)
+    
+    
+    
+    def Bms(f,gradu):
+        row =  np.zeros((sh.nlm),dtype=complex)
+        D = 0.5*(gradu+gradu.T)
+        
+        
+        
+        for i in range(sh.nlm):
+            l=sh.l[i]
+            m=sh.m[i]
+            
+            row[i] = D[0,0]*sh.xdx(f,l,m) + D[0,1]*sh.xdy(f,l,m) + D[0,2]*sh.xdz(f,l,m)\
+                    +D[1,0]*sh.ydx(f,l,m) + D[1,1]*sh.ydy(f,l,m) + D[1,2]*sh.ydz(f,l,m)\
+                    +D[2,0]*sh.zdx(f,l,m) + D[2,1]*sh.zdy(f,l,m) + D[2,2]*sh.zdz(f,l,m)
+        return row
+    
+    
+    def Wms(f,gradu):
+        row =  np.zeros((sh.nlm),dtype=complex)
+        wx = gradu[2,1] - gradu[1,2]
+        wy = gradu[0,2] - gradu[2,0]
+        wz = gradu[1,0] - gradu[0,1]
+        
+        
+        for t in range(sh.nlm):
+            l=sh.l[t]
+            m=sh.m[t]
+            
+            row[t] = 0.5*wx*( sh.ydz(f,l,m)-sh.zdy(f,l,m) )\
+                    +0.5*wy*( sh.zdx(f,l,m)-sh.xdz(f,l,m) )\
+                    +0.5*wz*( sh.xdy(f,l,m)-sh.ydx(f,l,m) )
+        return row
+        
+    
+    def Gms(f,Q):
+        #Qijkl = DijDkl
+        row =  np.zeros((sh.nlm),dtype=complex)
+        
+        for v in range(sh.nlm):
+            l=sh.l[v]
+            m=sh.m[v]
+            row[v] =  ((Q[0,0,0,0]+Q[1,0,1,0]+Q[2,0,2,0])*sh.xx(f,l,m) + (Q[0,1,0,1]+Q[1,1,1,1]+Q[2,1,2,1])*sh.yy(f,l,m) + (Q[0,2,0,2]+Q[1,2,1,2]+Q[2,2,2,2])*sh.zz(f,l,m) \
+                        +2*(Q[0,0,0,1] + Q[1,0,1,1] + Q[2,0,2,1])*sh.xy(f,l,m) + 2*(Q[0,0,0,2] + Q[1,0,1,2] + Q[2,0,2,2])*sh.xz(f,l,m) \
+                        +2*(Q[0,1,0,2] + Q[1,1,1,2] + Q[2,1,2,2])*sh.yz(f,l,m))\
+                        - ( Q[0,0,0,0]*sh.xxxx(f,l,m) + Q[1,1,1,1]*sh.yyyy(f,l,m) + Q[2,2,2,2]*sh.zzzz(f,l,m) + 4*Q[0,1,0,1]*sh.xxyy(f,l,m) + 4*Q[0,2,0,2]*sh.xxzz(f,l,m) + 4*Q[1,2,1,2]*sh.yyzz(f,l,m) + \
+                        + 2*Q[0,0,1,1]*sh.xxyy(f,l,m) + 2*Q[0,0,2,2]*sh.xxzz(f,l,m) + 4*Q[0,0,0,1]*sh.xxxy(f,l,m) + 4*Q[0,0,0,2]*sh.xxxz(f,l,m) + 4*Q[0,0,1,2]*sh.xxyz(f,l,m) \
+                        + 2*Q[1,1,2,2]*sh.yyzz(f,l,m) + 4*Q[1,1,0,1]*sh.xyyy(f,l,m) + 4*Q[1,1,0,2]*sh.xyyz(f,l,m) + 4*Q[1,1,1,2]*sh.yyyz(f,l,m) \
+                        + 4*Q[2,2,0,1]*sh.xyzz(f,l,m) + 4*Q[2,2,0,2]*sh.xzzz(f,l,m) + 4*Q[2,2,1,2]*sh.yzzz(f,l,m) \
+                        + 8*Q[0,1,0,2]*sh.xxyz(f,l,m) + 8*Q[0,1,1,2]*sh.xyyz(f,l,m) \
+                        + 8*Q[0,2,1,2]*sh.xyzz(f,l,m))
+        return row
+    
+    for j in range(sh.nlm):
+
+        # Initilase spectral array and set fj=1, 0 otherwise
+        f = sh.spec_array()
+        g= sh.spec_array()
+        f[j]=1.0
+        g[j]=1j
+        #Fill matrix
+        
+        for p in range(3):
+            for q in range(3):
+                
+                gradu =  np.zeros((3,3))
+                gradu[p,q]=1
+                
+                #R[:,j,p,q] = sh.analys(Rlam(theta,phi,fgrid,df_dtheta,df_dphi,gradu.flatten()))
+                #B[:,j,p,q] = sh.analys(Blam(theta,phi,fgrid,df_dtheta,df_dphi,gradu.flatten()))
+                R[:,j,p,q] = Wms(f,gradu)
+                Ri[:,j,p,q] = Wms(g,gradu)
+                B[:,j,p,q] = Bms(f,gradu)
+                Bi[:,j,p,q] = Bms(g,gradu)
+                for r in range(3):
+                    for s in range(3):
+                        
+                        Q= np.zeros((3,3,3,3))
+                        Q[p,q,r,s] = 1 
+                        
+                        #G[:,j,p,q,r,s] = sh.analys(fgrid*Deftop(theta,phi,Q))
+                        G[:,j,p,q,r,s] = Gms(f,Q)
+                        Gi[:,j,p,q,r,s] = Gms(g,Q)
+    
+    np.savez('MatricesL' + str(sh.lmax) +'.npz',R=R,Ri=Ri,B=B,Bi=Bi,G=G,Gi=Gi)    
+    
+    return R,Ri,B,Bi,G,Gi
+
+    
+
+class parameters:
+    def __init__(self):
+
+        # Raw data from simple shear and compression inversion Richards et al. 2020
+        self.rawT = np.array  ( [-30, -13.6, -10.2, -9.5, -30.3, -7, -5.5])
+        self.rawlamb = 2*np.array( [0.173, 0.198, 0.126, 0.343, 0.153, 0.139, 0.178])
+        self.rawbeta = 2*np.array([0.62, 4.25, 5.92, 2.75, 0.763, 4.12, 5.51])
+        self.rawiota = np.array([1.23, 1.93, 1.54, 1.98, 0.993, 1.65, 1.59])
+
+        self.plamb, self.lambcov = np.polyfit(self.rawT,self.rawlamb, 1, cov=True)
+        self.pbeta, self.betacov = np.polyfit(self.rawT,self.rawbeta, 1, cov=True)
+        self.piota, self.iotacov = np.polyfit(self.rawT,self.rawiota, 1, cov=True)
+
+
+    def lamb(self,T):
+        return np.polyval(self.plamb,T)
+
+    def beta(self,T):
+        return np.polyval(self.pbeta,T)
+
+    def iota(self,T):
+        return np.polyval(self.piota,T)
+
+    

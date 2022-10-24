@@ -1,0 +1,10 @@
+LICENSE
+README.md
+pyproject.toml
+src/__init__.py
+src/solver.py
+src/spherical.py
+src/SpecCAF.egg-info/PKG-INFO
+src/SpecCAF.egg-info/SOURCES.txt
+src/SpecCAF.egg-info/dependency_links.txt
+src/SpecCAF.egg-info/top_level.txt
