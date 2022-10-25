@@ -4,7 +4,7 @@ A spectral fabric evolution model for ice based on the theory of mixtures of con
 
 ## Installation
 
-`pip3 install speccaf`
+`pip install speccaf`
 
 Currently, matrices are built for L=4,6,8,12 and 20. If you wish to run the model with a different L value to this, you must first use the script matrixbuild.py to save pre-allocated arrays, and move this file to the packages local data directory.
 
