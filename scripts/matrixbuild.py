@@ -105,6 +105,6 @@ def build(sh):
     return R,Ri,B,Bi,G,Gi
 
 
-L=6
+L=20
 sh = spherical.spherical(L)
 R,Ri,B,Bi,G,Gi = build(sh)

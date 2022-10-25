@@ -2,12 +2,13 @@ from setuptools import setup
 
 setup(
     name='speccaf',
-    version='1.4.1',    
+    version='1.4.2',    
     description="Python implementation of a Spectral Continuum Anisotropic Fabric evolution model",
     url='https://github.com/danrichards678/SpecCAF',
     author='Daniel Richards',
     author_email='danrichards678@gmail.com',
     license='MIT',
+    readme = "README.md",
     packages=['speccaf'],
     package_data={'speccaf':['data/*.npz']},
     install_requires=['numpy',
