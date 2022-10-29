@@ -19,13 +19,10 @@ def MatrixLoad(sh):
     return R,Ri,B,Bi,G,Gi
     
 class rk3iterate:
-    def __init__(self,T,gradu,sh,lamfactor=1.0):
+    def __init__(self,T,gradu,sh,x=None):
         self.sh=sh
 
-        self.parameters = parameters()
-        self.iota = self.parameters.iota(T)
-        self.beta = self.parameters.beta(T)
-        self.lamb = self.parameters.lamb(T)
+
         
         self.gradu = gradu
         self.D = 0.5*(self.gradu+self.gradu.T)
@@ -34,13 +31,21 @@ class rk3iterate:
         self.effectiveSR = np.sqrt(0.5*self.D2)
         
         
-
+        self.gasconstant = 8.31446261815324
         # self.iota = 0.02589*T + 1.78
         # self.lamb = 0.0003037*T + 0.161
         # self.beta = 0.1706*T + 5.898
+        if x is not None:
+            self.parameters = optimizeparams(T,self.effectiveSR,x)
+        else:
+            self.parameters = parameters(T,self.effectiveSR)
+            
         
-        self.lamb=self.lamb*self.effectiveSR/lamfactor
-        self.beta=self.beta*self.effectiveSR
+        self.iota = self.parameters.iota()
+        self.beta = self.parameters.beta()
+        self.lamb = self.parameters.lamb()
+
+        
         [self.R,self.Ri,self.B,self.Bi,self.G,self.Gi] = MatrixLoad(self.sh)
         
         self.M = self.linear()
@@ -88,9 +93,11 @@ class rk3iterate:
 
 
 class parameters:
-    def __init__(self):
-
-        # Raw data from simple shear and compression inversion Richards et al. 2020
+    def __init__(self,T,effectiveSR):
+        
+        self.T=T
+        self.effectiveSR = effectiveSR
+        # Raw data from simple shear and compression inversion Richards et al. 2021
         self.rawT = np.array  ( [-30, -13.6, -10.2, -9.5, -30.3, -7, -5.5])
         self.rawlamb = 2*np.array( [0.173, 0.198, 0.126, 0.343, 0.153, 0.139, 0.178])
         self.rawbeta = 2*np.array([0.62, 4.25, 5.92, 2.75, 0.763, 4.12, 5.51])
@@ -101,13 +108,33 @@ class parameters:
         self.piota, self.iotacov = np.polyfit(self.rawT,self.rawiota, 1, cov=True)
 
 
-    def lamb(self,T):
-        return np.polyval(self.plamb,T)
+    def lamb(self):
+        return np.polyval(self.plamb,self.T)*self.effectiveSR
 
-    def beta(self,T):
-        return np.polyval(self.pbeta,T)
+    def beta(self):
+        return np.polyval(self.pbeta,self.T)*self.effectiveSR
 
-    def iota(self,T):
-        return np.polyval(self.piota,T)
+    def iota(self):
+        return np.polyval(self.piota,self.T)
+    
 
     
+class optimizeparams:
+    def __init__(self,T,effectiveSR,x):
+
+        # Returns dimensional parameters. Non dimensional parameters are in the form effectiveSR**p * Aexp(-Q/(R*T))
+
+        self.gasconstant = 8.31446261815324
+        self.x = x
+        self.T = T
+        self.effectiveSR = effectiveSR
+
+    def iota(self):
+        return self.effectiveSR**(self.x[0])*self.x[1]*np.exp(-self.x[2]/(self.gasconstant*self.T))
+    
+    def lamb(self):
+        return self.effectiveSR**(self.x[3]+1)*self.x[4]*np.exp(-self.x[5]/(self.gasconstant*self.T))
+    
+    def beta(self):
+        return self.effectiveSR**(self.x[6]+1)*self.x[7]*np.exp(-self.x[8]/(self.gasconstant*self.T))
+
