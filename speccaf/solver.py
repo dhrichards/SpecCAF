@@ -26,12 +26,11 @@ class rk3iterate:
         
         self.gradu = gradu
         self.D = 0.5*(self.gradu+self.gradu.T)
-        self.W = 0.5*(self.gradu-self.gradu.T)
+        self.W = 0.5*(self.gradu-self.gradu.T) 
         self.D2 = np.einsum('ij,ji',self.D,self.D)
         self.effectiveSR = np.sqrt(0.5*self.D2)
         
         
-        self.gasconstant = 8.31446261815324
         # self.iota = 0.02589*T + 1.78
         # self.lamb = 0.0003037*T + 0.161
         # self.beta = 0.1706*T + 5.898
@@ -126,15 +125,25 @@ class optimizeparams:
 
         self.gasconstant = 8.31446261815324
         self.x = x
-        self.T = T
+        self.T = T + 273.15
         self.effectiveSR = effectiveSR
 
+        self.p_iota = 0
+        self.p_beta = 0
+        self.p_lamb = 0
+        self.A_iota = x[0]
+        self.A_lamb = x[1]
+        self.A_beta = x[2]
+        self.Q_iota = 0
+        self.Q_lamb = 0
+        self.Q_beta = 0
+
     def iota(self):
-        return self.effectiveSR**(self.x[0])*self.x[1]*np.exp(-self.x[2]/(self.gasconstant*self.T))
+        return self.effectiveSR**(self.p_iota)*self.A_iota*np.exp(-self.Q_iota/(self.gasconstant*self.T))
     
     def lamb(self):
-        return self.effectiveSR**(self.x[3]+1)*self.x[4]*np.exp(-self.x[5]/(self.gasconstant*self.T))
+        return self.effectiveSR**(self.p_lamb+1)*self.A_lamb*np.exp(-self.Q_lamb/(self.gasconstant*self.T))
     
     def beta(self):
-        return self.effectiveSR**(self.x[6]+1)*self.x[7]*np.exp(-self.x[8]/(self.gasconstant*self.T))
+        return self.effectiveSR**(self.p_beta+1)*self.A_beta*np.exp(-self.Q_beta/(self.gasconstant*self.T))
 
