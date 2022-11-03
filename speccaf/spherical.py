@@ -91,6 +91,15 @@ class spherical:
                 Y = Y + f[self.idx(l,abs(m))]*sph_harm(M,l,phi,theta)
         Y=Y.real/sqrt(4*np.pi)
         return Y
+    
+    def synthpts(self,f,theta,phi):
+        Y = np.zeros_like(theta)
+        for l in range(0,self.lmax+1,2):
+            for m in range(-l,l+1,1):
+                M=abs(m)
+                Y = Y + f[self.idx(l,abs(m))]*sph_harm(M,l,phi,theta)
+        Y=Y.real/sqrt(4*np.pi)
+        return Y
         
     
     def analys(self,fgrid): # Tansfrom from grid to spherical harmonics
@@ -906,6 +915,50 @@ class spherical:
         f[self.idx(2,0)] = np.sqrt(45)*(1/3 - k)
 
         return f
+    
+
+
+    
+    def rejection_sampling_on_sphere(self, f, n_samples):
+
+        fgrid = self.synth(f)
+        n = n_samples
+
+        theta = np.zeros(n_samples)
+        phi = np.zeros(n_samples)
+            
+        while n>0:
+            ## Create n points on sphere
+            phi_local = np.random.uniform(0,2*np.pi,n)
+            costheta_local = np.random.uniform(-1,1,n)
+            theta_local = np.arccos( costheta_local )
+
+
+            # Assign random value to these points between 0 and fgrid max
+            f_random=fgrid.max()*np.random.rand(n)
+            
+            ## Find function value at pts from spherical harmoic
+            f_pts=self.synthpts(f,theta_local,phi_local)
+
+
+            ## Reject points if they are above the function
+            theta_local = theta_local[f_pts>f_random]
+            phi_local = phi_local[f_pts>f_random]
+
+
+            ## Check if we have too many points
+            if len(theta_local)>n:
+                theta_local = theta_local[:n]
+                phi_local = phi_local[:n]
+
+
+            ## Add to array
+            theta[n-n_samples:n-len(theta_local)]=theta_local
+            phi[n-n_samples:n-len(phi_local)]=phi_local
+            n = n_samples - len(theta)
+        
+        return theta, phi
+            
 
     
     def J(self,f):
