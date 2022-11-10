@@ -36,7 +36,8 @@ class solver:
         self.Dstar = 5*(np.einsum('ipq,ipq->pq',Dn,Dn) - Dnn**2)/self.D2
         
 
-
+        self.f0 = self.sh.spec_array()
+        self.f0[0] = 1.0
         
 
     def vec_cart2sph(self,v):
@@ -90,23 +91,17 @@ class solver:
         self.beta = 0.35182521*T + 12.17066493
     
 
-    def solve_constant(self,gradu,TorX,dt=0.01,tmax=1.0):
+    def solve_constant(self,gradu,T,dt=0.01,tmax=1.0,x=None):
         self.dt = dt
         self.tmax = tmax
         self.t  = np.arange(0,tmax,dt)
         self.nsteps = len(self.t)
-        self.f0 = self.sh.spec_array()
-        self.f0[0] = 1.0
+        
 
         self.f = np.zeros((self.nsteps,self.sh.nlm),dtype=np.complex128)
         self.f[0,...] = self.f0
 
-        if np.isscalar(TorX):
-            self.params(TorX)
-        else:
-            self.iota = TorX[0]
-            self.lamb = TorX[1]
-            self.beta = TorX[2]
+        
         
         self.v_star_cal(gradu)
         for i in range(self.nsteps-1):
@@ -114,17 +109,20 @@ class solver:
 
         return self.f
 
-    def iterate(self,gradu,TorX,dt):
-        if np.isscalar(TorX):
-            self.params(TorX)
+    def iterate(self,T,gradu,dt,x=None):
+
+
+        if x is not None:
+            self.iota = x[0]
+            self.lamb = x[1]
+            self.beta = x[2]
         else:
-            self.iota = TorX[0]
-            self.lamb = TorX[1]
-            self.beta = TorX[2]
+            self.params(T)
         
         self.v_star_cal(gradu)
         self.f = self.RK4(self.f,dt)
         return self.f
+    
     
 
     def a2(self,f):
