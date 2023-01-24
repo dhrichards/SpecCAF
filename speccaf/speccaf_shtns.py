@@ -4,7 +4,7 @@ import numpy as np
 
 
 class solver:
-    def __init__(self,lmax=20,mmax=4):
+    def __init__(self,lmax=20,mmax=6):
         
         self.sh = shtns.sht(lmax,mmax)
 
