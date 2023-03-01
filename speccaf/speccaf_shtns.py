@@ -115,7 +115,7 @@ class solver:
         self.v_star_cal(gradu)
         for i in range(self.nsteps-1):
             self.f[i+1,...] = self.RK4(self.f[i,...],dt)
-
+            #self.f[i+1,...] = self.f[i,...] + self.RHS(self.f[i,...])*dt
         return self.f
 
     def iterate(self,f,T,gradu,dt,x=None):
